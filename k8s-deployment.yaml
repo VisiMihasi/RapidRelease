@@ -1,29 +1,72 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ossasea-app-deployment
+  name: rapidrelease-app-deployment
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: ossasea-app
+      app: rapidrelease-app
   template:
     metadata:
       labels:
-        app: ossasea-app
+        app: rapidrelease-app
     spec:
       containers:
-        - name: ossasea-app
-          image: your-dockerhub-username/ossasea-app:latest
+        - name: rapidrelease-app
+          image: visimihasi/ossasea-app:v2
           ports:
             - containerPort: 8081
           env:
             - name: SPRING_DATASOURCE_URL
-              value: jdbc:mysql://mysql-db:3306/osasea
+              value: jdbc:mysql://mysql-service:3306/osasea
             - name: SPRING_DATASOURCE_USERNAME
               value: root
             - name: SPRING_DATASOURCE_PASSWORD
               value: root
+      nodeSelector:
+        worker: "true"  # Ensure the app is deployed on worker nodes
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rapidrelease-service-node-1
+spec:
+  type: NodePort
+  ports:
+    - port: 8081
+      targetPort: 8081
+      nodePort: 30080
+  selector:
+    app: rapidrelease-app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rapidrelease-service-node-2
+spec:
+  type: NodePort
+  ports:
+    - port: 8081
+      nodePort: 30090
+  selector:
+    app: rapidrelease-app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-deployment
+spec:
+  selector:
+    matchLabels:
+      app: mysql-db
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mysql-db
+    spec:
+      containers:
         - name: mysql-db
           image: mysql:latest
           ports:
@@ -37,12 +80,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ossasea-service
+  name: mysql-service
 spec:
-  type: LoadBalancer
-  selector:
-    app: ossasea-app
+  type: ClusterIP
   ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8081
+    - port: 3306
+  selector:
+    app: mysql-db

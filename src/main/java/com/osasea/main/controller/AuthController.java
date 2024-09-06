@@ -18,6 +18,11 @@ public class AuthController {
     @Autowired
     private UserRepository userRepository;
 
+    @GetMapping("/")
+    public String root() {
+        return "redirect:/login"; // Redirect to login or another page
+    }
+
     @GetMapping("/login")
     public String showLoginForm(Model model) {
         model.addAttribute("user", new User());

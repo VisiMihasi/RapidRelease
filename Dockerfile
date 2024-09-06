@@ -1,14 +1,14 @@
-# Use an official JDK runtime as a parent image
+# Use an official OpenJDK runtime as a parent image
 FROM openjdk:17-jdk-slim
 
-# Set the working directory inside the container
+# Set the working directory in the container
 WORKDIR /app
 
 # Copy the compiled jar file from the target directory to the container
-COPY target/your-app-name.jar app.jar
+COPY target/Osasea-0.0.1-SNAPSHOT.jar app.jar
 
 # Expose the application port
 EXPOSE 8081
 
-# Run the jar file
+# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

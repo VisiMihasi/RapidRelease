@@ -200,7 +200,6 @@ public class Main {
                             .build())
                     .build());
 
-            // Create CronJob to restart the deployment every 15 and 17 minutes
             var cronJob1 = new CronJob("cronJob1", CronJobArgs.builder()
                     .metadata(ObjectMetaArgs.builder()
                             .name("app-restart-cronjob-worker1")
@@ -214,7 +213,8 @@ public class Main {
                                                             .containers(ContainerArgs.builder()
                                                                     .name("kubectl")
                                                                     .image("bitnami/kubectl")
-                                                                    .args("-- bash -c 'kubectl rollout restart deployment/rapidrelease-app-deployment'")
+                                                                    .command("/bin/sh")
+                                                                    .args("-c", "kubectl rollout restart deployment/rapidrelease-app-deployment")
                                                                     .build())
                                                             .restartPolicy("OnFailure")
                                                             .build())
@@ -237,7 +237,8 @@ public class Main {
                                                             .containers(ContainerArgs.builder()
                                                                     .name("kubectl")
                                                                     .image("bitnami/kubectl")
-                                                                    .args("-- bash -c 'kubectl rollout restart deployment/rapidrelease-app-deployment'")
+                                                                    .command("/bin/sh")
+                                                                    .args("-c", "kubectl rollout restart deployment/rapidrelease-app-deployment")
                                                                     .build())
                                                             .restartPolicy("OnFailure")
                                                             .build())

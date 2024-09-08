@@ -59,7 +59,9 @@ jobs:
 
       # Build the Docker image with the new version tag
       - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag visimihasi/ossasea-app:${{ steps.version.outputs.version }}
+        run: |
+          docker build . --file Dockerfile --tag visimihasi/ossasea-app:${{ steps.version.outputs.version }}
+          docker tag visimihasi/ossasea-app:${{ steps.version.outputs.version }} visimihasi/ossasea-app:latest
 
       # Log in to Docker Hub using secrets
       - name: Log in to Docker Hub
@@ -72,7 +74,6 @@ jobs:
       - name: Push Docker image
         run: |
           docker push visimihasi/ossasea-app:${{ steps.version.outputs.version }}
-          docker tag visimihasi/ossasea-app:${{ steps.version.outputs.version }} visimihasi/ossasea-app:latest
           docker push visimihasi/ossasea-app:latest
 
       # Check if the tag exists, and only tag if it doesn't
@@ -85,7 +86,6 @@ jobs:
           else
             echo "Tag does not exist"
             echo "exists=false" >> $GITHUB_ENV
-          fi
 
       # Create a new Git tag and push it only if it doesn't already exist
       - name: Tag the repository

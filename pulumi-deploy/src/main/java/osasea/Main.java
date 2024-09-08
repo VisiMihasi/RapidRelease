@@ -91,7 +91,7 @@ public class Main {
                                     .spec(PodSpecArgs.builder()
                                             .containers(ContainerArgs.builder()
                                                     .name("rapidrelease-app")
-                                                    .image("visimihasi/ossasea-app:v2")
+                                                    .image("visimihasi/ossasea-app:latest")
                                                     .env(
                                                             EnvVarArgs.builder()
                                                                     .name("SPRING_DATASOURCE_URL")

@@ -1,0 +1,65 @@
+name: Publish Docker image
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    # Install git to fetch tags
+    - name: Set up Git
+      run: sudo apt-get update && sudo apt-get install -y git
+
+    # Fetch all tags to increment version
+    - name: Fetch Git tags
+      run: git fetch --tags
+
+    # Determine the next version based on the latest Git tag
+    - name: Determine Docker image version
+      id: version
+      run: |
+        latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v2.0.0")
+        echo "Latest tag: $latest_tag"
+        
+        # Strip 'v' and split the version into parts (e.g., v2.0.1 -> 2.0.1)
+        latest_version=${latest_tag#v}
+        major=$(echo $latest_version | cut -d. -f1)
+        minor=$(echo $latest_version | cut -d. -f2)
+        patch=$(echo $latest_version | cut -d. -f3)
+
+        # Increment patch version
+        new_patch=$((patch + 1))
+        new_version="v$major.$minor.$new_patch"
+        echo "New version: $new_version"
+
+        # Set version as output
+        echo "::set-output name=version::$new_version"
+
+    # Build the Docker image with the new version tag
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag visimihasi/ossasea-app:${{ steps.version.outputs.version }}
+
+    # Log in to Docker Hub using secrets
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    # Push the Docker image to Docker Hub
+    - name: Push Docker image
+      run: docker push visimihasi/ossasea-app:${{ steps.version.outputs.version }}
+
+    # Create a new Git tag and push it
+    - name: Tag the repository
+      run: |
+        git tag ${{ steps.version.outputs.version }}
+        git push origin ${{ steps.version.outputs.version }}

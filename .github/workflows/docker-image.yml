@@ -68,6 +68,7 @@ jobs:
           else
             echo "Tag does not exist"
             echo "exists=false" >> $GITHUB_ENV
+          fi
 
       # Build the Docker image with both the version tag and 'latest'
       - name: Build the Docker image

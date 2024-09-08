@@ -1,3 +1,4 @@
+/* Fade In Animation */
 @keyframes fadeInUp {
     0% {
         opacity: 0;
@@ -9,11 +10,13 @@
     }
 }
 
+/* Body */
 body {
     font-family: Arial, sans-serif;
     background-color: #f0f0f0;
 }
 
+/* Container */
 .container {
     width: 400px;
     margin: 50px auto;
@@ -24,11 +27,13 @@ body {
     text-align: center;
 }
 
+/* Heading */
 h2 {
     color: #333;
     margin-bottom: 20px;
 }
 
+/* Card */
 .card {
     background-color: #fff;
     border-radius: 8px;
@@ -64,6 +69,7 @@ h2 {
     font-size: 14px;
 }
 
+/* Logout Button */
 a.logout {
     display: inline-block;
     text-align: center;
@@ -78,4 +84,14 @@ a.logout {
 
 a.logout:hover {
     background-color: #0056b3;
+}
+
+/* Ensure other styles in the app are not changed */
+input[type="text"], input[type="password"], button {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
 }

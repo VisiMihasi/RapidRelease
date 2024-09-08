@@ -6,6 +6,11 @@ import com.pulumi.command.local.CommandArgs;
 import com.pulumi.kubernetes.apps.v1.Deployment;
 import com.pulumi.kubernetes.apps.v1.DeploymentArgs;
 import com.pulumi.kubernetes.apps.v1.inputs.DeploymentSpecArgs;
+import com.pulumi.kubernetes.batch.v1.CronJob;
+import com.pulumi.kubernetes.batch.v1.CronJobArgs;
+import com.pulumi.kubernetes.batch.v1.inputs.CronJobSpecArgs;
+import com.pulumi.kubernetes.batch.v1.inputs.JobTemplateSpecArgs;
+import com.pulumi.kubernetes.batch.v1.inputs.JobSpecArgs;
 import com.pulumi.kubernetes.core.v1.Service;
 import com.pulumi.kubernetes.core.v1.ServiceArgs;
 import com.pulumi.kubernetes.core.v1.inputs.*;
@@ -18,12 +23,11 @@ public class Main {
     public static void main(String[] args) {
         Pulumi.run(ctx -> {
 
-            // Step 1: Create Kind Cluster using Command
             var kindCluster = new Command("kind-cluster", CommandArgs.builder()
                     .create("kind create cluster --name kind-cluster --config=./kind-config.yaml")
                     .build());
 
-            // MySQL Deployment
+            // MySQL Deployment on specific node (node affinity)
             var mysqlDeployment = new Deployment("mysqlDeployment", DeploymentArgs.builder()
                     .metadata(ObjectMetaArgs.builder()
                             .name("mysql-deployment")
@@ -38,6 +42,27 @@ public class Main {
                                             .labels(Map.of("app", "mysql-db"))
                                             .build())
                                     .spec(PodSpecArgs.builder()
+                                            .affinity(AffinityArgs.builder()
+                                                    .nodeAffinity(NodeAffinityArgs.builder()
+                                                            .requiredDuringSchedulingIgnoredDuringExecution(
+                                                                    NodeSelectorArgs.builder()
+                                                                            .nodeSelectorTerms(
+                                                                                    NodeSelectorTermArgs.builder()
+                                                                                            .matchExpressions(
+                                                                                                    NodeSelectorRequirementArgs.builder()
+                                                                                                            .key("kubernetes.io/hostname")
+                                                                                                            .operator("In")
+                                                                                                            .values("rapid-release-worker")
+                                                                                                            .build()
+                                                                                            )
+                                                                                            .build()
+                                                                            )
+                                                                            .build()
+                                                            )
+                                                            .build()
+                                                    )
+                                                    .build()
+                                            )
                                             .containers(ContainerArgs.builder()
                                                     .name("mysql-db")
                                                     .image("mysql:8.0")
@@ -60,7 +85,6 @@ public class Main {
                             .build())
                     .build());
 
-            // MySQL Service
             var mysqlService = new Service("mysqlService", ServiceArgs.builder()
                     .metadata(ObjectMetaArgs.builder()
                             .name("mysql-service")
@@ -74,7 +98,7 @@ public class Main {
                             .build())
                     .build());
 
-            // RapidRelease App Deployment
+            // App Deployment with node affinity and imagePullPolicy set to Always
             var appDeployment = new Deployment("appDeployment", DeploymentArgs.builder()
                     .metadata(ObjectMetaArgs.builder()
                             .name("rapidrelease-app-deployment")
@@ -89,9 +113,42 @@ public class Main {
                                             .labels(Map.of("app", "rapidrelease-app"))
                                             .build())
                                     .spec(PodSpecArgs.builder()
+                                            .affinity(AffinityArgs.builder()
+                                                    .nodeAffinity(NodeAffinityArgs.builder()
+                                                            .preferredDuringSchedulingIgnoredDuringExecution(
+                                                                    PreferredSchedulingTermArgs.builder()
+                                                                            .preference(NodeSelectorTermArgs.builder()
+                                                                                    .matchExpressions(
+                                                                                            NodeSelectorRequirementArgs.builder()
+                                                                                                    .key("kubernetes.io/hostname")
+                                                                                                    .operator("In")
+                                                                                                    .values("rapid-release-worker2")
+                                                                                                    .build()
+                                                                                    )
+                                                                                    .build())
+                                                                            .weight(1)
+                                                                            .build(),
+                                                                    PreferredSchedulingTermArgs.builder()
+                                                                            .preference(NodeSelectorTermArgs.builder()
+                                                                                    .matchExpressions(
+                                                                                            NodeSelectorRequirementArgs.builder()
+                                                                                                    .key("kubernetes.io/hostname")
+                                                                                                    .operator("In")
+                                                                                                    .values("rapid-release-worker")
+                                                                                                    .build()
+                                                                                    )
+                                                                                    .build())
+                                                                            .weight(1)
+                                                                            .build()
+                                                            )
+                                                            .build()
+                                                    )
+                                                    .build()
+                                            )
                                             .containers(ContainerArgs.builder()
                                                     .name("rapidrelease-app")
                                                     .image("visimihasi/ossasea-app:latest")
+                                                    .imagePullPolicy("Always")  // Pulls the latest image
                                                     .env(
                                                             EnvVarArgs.builder()
                                                                     .name("SPRING_DATASOURCE_URL")
@@ -115,7 +172,6 @@ public class Main {
                             .build())
                     .build());
 
-            // Service to expose the app
             var serviceApp = new Service("rapidreleaseServiceApp", ServiceArgs.builder()
                     .metadata(ObjectMetaArgs.builder()
                             .name("rapidrelease-service-app")
@@ -129,7 +185,6 @@ public class Main {
                             .build())
                     .build());
 
-            // NodePort Service to expose externally
             var serviceNodePort = new Service("serviceNodePort", ServiceArgs.builder()
                     .metadata(ObjectMetaArgs.builder()
                             .name("rapidrelease-service-node")
@@ -142,6 +197,53 @@ public class Main {
                                     .nodePort(30100)
                                     .build())
                             .type("NodePort")
+                            .build())
+                    .build());
+
+            // Create CronJob to restart the deployment every 15 and 17 minutes
+            var cronJob1 = new CronJob("cronJob1", CronJobArgs.builder()
+                    .metadata(ObjectMetaArgs.builder()
+                            .name("app-restart-cronjob-worker1")
+                            .build())
+                    .spec(CronJobSpecArgs.builder()
+                            .schedule("*/15 * * * *") // Every 15 minutes
+                            .jobTemplate(JobTemplateSpecArgs.builder()
+                                    .spec(JobSpecArgs.builder()
+                                            .template(PodTemplateSpecArgs.builder()
+                                                    .spec(PodSpecArgs.builder()
+                                                            .containers(ContainerArgs.builder()
+                                                                    .name("kubectl")
+                                                                    .image("bitnami/kubectl")
+                                                                    .args("-- bash -c 'kubectl rollout restart deployment/rapidrelease-app-deployment'")
+                                                                    .build())
+                                                            .restartPolicy("OnFailure")
+                                                            .build())
+                                                    .build())
+                                            .build())
+                                    .build())
+                            .build())
+                    .build());
+
+            var cronJob2 = new CronJob("cronJob2", CronJobArgs.builder()
+                    .metadata(ObjectMetaArgs.builder()
+                            .name("app-restart-cronjob-worker2")
+                            .build())
+                    .spec(CronJobSpecArgs.builder()
+                            .schedule("*/17 * * * *") // Every 17 minutes
+                            .jobTemplate(JobTemplateSpecArgs.builder()
+                                    .spec(JobSpecArgs.builder()
+                                            .template(PodTemplateSpecArgs.builder()
+                                                    .spec(PodSpecArgs.builder()
+                                                            .containers(ContainerArgs.builder()
+                                                                    .name("kubectl")
+                                                                    .image("bitnami/kubectl")
+                                                                    .args("-- bash -c 'kubectl rollout restart deployment/rapidrelease-app-deployment'")
+                                                                    .build())
+                                                            .restartPolicy("OnFailure")
+                                                            .build())
+                                                    .build())
+                                            .build())
+                                    .build())
                             .build())
                     .build());
         });

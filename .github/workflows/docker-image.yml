@@ -13,6 +13,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
+      # Step to build the Java application
+    - name: Build with Maven
+      run: mvn clean package
     
     # Install git to fetch tags
     - name: Set up Git

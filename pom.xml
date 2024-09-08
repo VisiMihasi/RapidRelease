@@ -45,12 +45,14 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- MySQL Connector -->
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.30</version>
         </dependency>
 
+        <!-- Thymeleaf -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
@@ -60,7 +62,7 @@
         <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
-            <version>6.1.7.Final</version> <!-- Match it to your Spring Boot version -->
+            <version>6.1.7.Final</version>
         </dependency>
 
         <!-- Jakarta Persistence API -->
@@ -84,7 +86,33 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Pulumi Core -->
+        <dependency>
+            <groupId>com.pulumi</groupId>
+            <artifactId>pulumi</artifactId>
+            <version>0.5.3</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.pulumi/kubernetes -->
+        <dependency>
+            <groupId>com.pulumi</groupId>
+            <artifactId>kubernetes</artifactId>
+            <version>4.18.0-alpha.1725404530</version>
+        </dependency>
+
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+        <repository>
+            <id>pulumi-releases</id>
+            <url>https://repo.pulumi.com/releases</url>
+        </repository>
+    </repositories>
 
     <build>
         <plugins>

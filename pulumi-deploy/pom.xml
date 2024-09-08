@@ -25,6 +25,11 @@
         </dependency>
         <dependency>
             <groupId>com.pulumi</groupId>
+            <artifactId>command</artifactId>
+            <version>0.8.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.pulumi</groupId>
             <artifactId>kubernetes</artifactId>
             <version>(,5.0]</version>
         </dependency>

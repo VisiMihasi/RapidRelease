@@ -1,6 +1,8 @@
 package osasea;
 
 import com.pulumi.Pulumi;
+import com.pulumi.command.local.Command;
+import com.pulumi.command.local.CommandArgs;
 import com.pulumi.kubernetes.apps.v1.Deployment;
 import com.pulumi.kubernetes.apps.v1.DeploymentArgs;
 import com.pulumi.kubernetes.apps.v1.inputs.DeploymentSpecArgs;
@@ -15,6 +17,11 @@ import java.util.Map;
 public class Main {
     public static void main(String[] args) {
         Pulumi.run(ctx -> {
+
+            // Step 1: Create Kind Cluster using Command
+            var kindCluster = new Command("kind-cluster", CommandArgs.builder()
+                    .create("kind create cluster --name kind-cluster --config=./kind-config.yaml")
+                    .build());
 
             // MySQL Deployment
             var mysqlDeployment = new Deployment("mysqlDeployment", DeploymentArgs.builder()
@@ -46,10 +53,6 @@ public class Main {
                                                     )
                                                     .ports(ContainerPortArgs.builder()
                                                             .containerPort(3306)
-                                                            .build())
-                                                    .resources(ResourceRequirementsArgs.builder()
-                                                            .requests(Map.of("cpu", "100m", "memory", "256Mi"))
-                                                            .limits(Map.of("cpu", "500m", "memory", "512Mi"))
                                                             .build())
                                                     .build())
                                             .build())
@@ -112,10 +115,24 @@ public class Main {
                             .build())
                     .build());
 
-            // RapidRelease App Service 1
-            var service1 = new Service("serviceNode1", ServiceArgs.builder()
+            // Service to expose the app
+            var serviceApp = new Service("rapidreleaseServiceApp", ServiceArgs.builder()
                     .metadata(ObjectMetaArgs.builder()
-                            .name("rapidrelease-service-node-1")
+                            .name("rapidrelease-service-app")
+                            .build())
+                    .spec(ServiceSpecArgs.builder()
+                            .selector(Map.of("app", "rapidrelease-app"))
+                            .ports(ServicePortArgs.builder()
+                                    .port(8081)
+                                    .targetPort(8081)
+                                    .build())
+                            .build())
+                    .build());
+
+            // NodePort Service to expose externally
+            var serviceNodePort = new Service("serviceNodePort", ServiceArgs.builder()
+                    .metadata(ObjectMetaArgs.builder()
+                            .name("rapidrelease-service-node")
                             .build())
                     .spec(ServiceSpecArgs.builder()
                             .selector(Map.of("app", "rapidrelease-app"))
@@ -123,22 +140,6 @@ public class Main {
                                     .port(8081)
                                     .targetPort(8081)
                                     .nodePort(30100)
-                                    .build())
-                            .type("NodePort")
-                            .build())
-                    .build());
-
-            // RapidRelease App Service 2
-            var service2 = new Service("serviceNode2", ServiceArgs.builder()
-                    .metadata(ObjectMetaArgs.builder()
-                            .name("rapidrelease-service-node-2")
-                            .build())
-                    .spec(ServiceSpecArgs.builder()
-                            .selector(Map.of("app", "rapidrelease-app"))
-                            .ports(ServicePortArgs.builder()
-                                    .port(8081)
-                                    .targetPort(8081)
-                                    .nodePort(30110)
                                     .build())
                             .type("NodePort")
                             .build())

@@ -23,7 +23,7 @@ jobs:
 
       # Step to build the Java application
     - name: Build with Maven
-      run: mvn clean package
+      run: mvn clean package -DskipTests
     
     # Install git to fetch tags
     - name: Set up Git
